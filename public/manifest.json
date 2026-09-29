@@ -1,0 +1,17 @@
+{
+  "name": "Saga",
+  "short_name": "Saga",
+  "description": "A quiet place for notes, with every version kept.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3eee6",
+  "theme_color": "#24312b",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

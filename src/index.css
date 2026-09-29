@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+@source '../node_modules/@blocknote/shadcn';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-paper: var(--paper);
+  --color-gold: var(--gold);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --font-serif: Fraunces, Georgia, serif;
+}
+
+:root {
+  --background: #f3eee6;
+  --foreground: #1e1a15;
+  --card: #fbf7f1;
+  --card-foreground: #1e1a15;
+  --popover: #fffdf9;
+  --popover-foreground: #1e1a15;
+  --primary: #2c5649;
+  --primary-foreground: #f7f3ec;
+  --secondary: #e7e0d4;
+  --secondary-foreground: #2a241c;
+  --muted: #ece5da;
+  --muted-foreground: #6f675c;
+  --accent: #e6ded0;
+  --accent-foreground: #1e1a15;
+  --destructive: #9c3b2e;
+  --border: #ddd4c6;
+  --input: #ddd4c6;
+  --ring: #2c5649;
+  --sidebar: #24312b;
+  --sidebar-foreground: #f4efe6;
+  --paper: #fffdf9;
+  --gold: #a68456;
+  --radius: 0.8rem;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #141210;
+  --foreground: #f4efe6;
+  --card: #1c1916;
+  --card-foreground: #f4efe6;
+  --popover: #221e1a;
+  --popover-foreground: #f4efe6;
+  --primary: #d7b48a;
+  --primary-foreground: #1c1610;
+  --secondary: #2a2622;
+  --secondary-foreground: #f4efe6;
+  --muted: #2a2622;
+  --muted-foreground: #b7aea2;
+  --accent: #322c26;
+  --accent-foreground: #f4efe6;
+  --destructive: #e07a68;
+  --border: #3a342c;
+  --input: #3a342c;
+  --ring: #d7b48a;
+  --sidebar: #100e0c;
+  --sidebar-foreground: #f4efe6;
+  --paper: #1b1815;
+  --gold: #d7b48a;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+  }
+}
+
+::selection {
+  background: #e4d3b0;
+  color: #1e1a15;
+}
+
+.saga-editor .bn-container,
+.saga-editor .bn-editor {
+  background: transparent;
+  font-family: var(--font-sans);
+}
+
+.saga-editor .bn-editor {
+  min-height: 50vh;
+  padding-inline: 0;
+  padding-bottom: 30vh;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
