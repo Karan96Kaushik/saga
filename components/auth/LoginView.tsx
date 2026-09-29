@@ -67,7 +67,7 @@ export function LoginView() {
 
           {!configured ? (
             <p className="mt-6 rounded-lg border border-border bg-secondary px-3 py-3 text-sm text-muted-foreground">
-              Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code>, then run{' '}
+              Set <code>VITE_SUPABASE_URL_SAGA</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY_SAGA</code>, then run{' '}
               <code>supabase/schema.sql</code> in the Supabase SQL editor.
             </p>
           ) : null}

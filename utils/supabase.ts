@@ -43,15 +43,15 @@ function readAuthCallback(): AuthCallback {
 
 export const authCallback = readAuthCallback();
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
-const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+const rawUrl = import.meta.env.VITE_SUPABASE_URL_SAGA ?? '';
+const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY_SAGA ?? '';
 const supabaseUrl = rawUrl ? normalizeSupabaseUrl(rawUrl) : '';
 
 export const supabaseConfigured = Boolean(supabaseUrl && publishableKey);
 
 if (!supabaseConfigured) {
   console.warn(
-    'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.',
+    'Supabase is not configured. Set VITE_SUPABASE_URL_SAGA and VITE_SUPABASE_PUBLISHABLE_KEY_SAGA.',
   );
 }
 

@@ -24,6 +24,6 @@ function applyEnvFile(path: string, override: boolean) {
 applyEnvFile('.env', false);
 applyEnvFile('.env.local', true);
 
-if (process.env.VITE_SUPABASE_URL) {
-  process.env.VITE_SUPABASE_URL = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
+if (process.env.VITE_SUPABASE_URL_SAGA) {
+  process.env.VITE_SUPABASE_URL_SAGA = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL_SAGA);
 }
