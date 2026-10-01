@@ -59,6 +59,16 @@ export type NoteTagRow = {
   user_id: string;
 };
 
+export type FileRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+};
+
 type NoteInsert = {
   id?: string;
   user_id: string;
@@ -151,6 +161,20 @@ export type Database = {
         Row: NoteTagRow;
         Insert: NoteTagRow;
         Update: Partial<NoteTagRow>;
+        Relationships: [];
+      };
+      files: {
+        Row: FileRow;
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          storage_path: string;
+          mime_type: string;
+          size_bytes: number;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
         Relationships: [];
       };
     };

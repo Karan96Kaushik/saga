@@ -1,0 +1,7 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, destructive = false, pending = false, onConfirm, }) {
+    return (_jsx(AlertDialogPrimitive.Root, { open: open, onOpenChange: onOpenChange, children: _jsxs(AlertDialogPrimitive.Portal, { children: [_jsx(AlertDialogPrimitive.Overlay, { className: "fixed inset-0 z-50 bg-black/40" }), _jsxs(AlertDialogPrimitive.Content, { className: "fixed left-1/2 top-1/2 z-50 w-[min(100%-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-paper p-6 shadow-xl", children: [_jsx(AlertDialogPrimitive.Title, { className: "font-serif text-xl", children: title }), _jsx(AlertDialogPrimitive.Description, { className: "mt-2 text-sm text-muted-foreground", children: description }), _jsxs("div", { className: "mt-6 flex justify-end gap-2", children: [_jsx(AlertDialogPrimitive.Cancel, { className: cn(buttonVariants({ variant: 'outline' })), disabled: pending, children: "Cancel" }), _jsx(AlertDialogPrimitive.Action, { className: cn(buttonVariants({ variant: destructive ? 'destructive' : 'default' })), disabled: pending, onClick: onConfirm, children: confirmLabel })] })] })] }) }));
+}

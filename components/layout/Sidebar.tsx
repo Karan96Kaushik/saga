@@ -1,4 +1,4 @@
-import { Hash, Inbox, Notebook, Plus, Trash2 } from 'lucide-react';
+import { Hash, Inbox, Notebook, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useFiles } from '@/hooks/useFiles';
 import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import type { NotebookRow, TagRow } from '@/lib/supabase/types';
@@ -36,6 +37,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     deleteNotebook,
     deleteTag,
   } = useNotes();
+  const { files } = useFiles();
   const { pathname } = useLocation();
   const skipRename = useRef(false);
   const [creating, setCreating] = useState(false);
@@ -82,6 +84,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             <span className="ml-auto text-xs text-sidebar-foreground/60">{unfiled}</span>
           </NavLink>
         ) : null}
+        <NavLink to="/files" className={({ isActive }) => navClass(isActive)} onClick={onNavigate}>
+          <Paperclip className="size-4" />
+          Files
+          {files.length > 0 ? <span className="ml-auto text-xs text-sidebar-foreground/60">{files.length}</span> : null}
+        </NavLink>
         <NavLink to="/trash" className={({ isActive }) => navClass(isActive)} onClick={onNavigate}>
           <Trash2 className="size-4" />
           Trash

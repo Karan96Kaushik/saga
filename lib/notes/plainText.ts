@@ -28,6 +28,7 @@ function visitBlock(parts: string[], block: BlockLike) {
   if (typeof block.content === 'string') pushText(parts, block.content);
   else if (Array.isArray(block.content)) block.content.forEach((node) => visitInline(parts, node));
   pushText(parts, block.props?.caption);
+  pushText(parts, block.props?.name);
   block.children?.forEach((child) => visitBlock(parts, child));
 }
 

@@ -7,6 +7,7 @@ import {
   Download,
   History,
   MoreHorizontal,
+  Paperclip,
   Pin,
   PinOff,
   RotateCcw,
@@ -15,7 +16,9 @@ import {
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { FilePickerDialog } from '@/components/files/FilePickerDialog';
 import { EditorBoundary } from '@/components/notes/EditorBoundary';
+import { noteSchema } from '@/components/notes/noteSchema';
 import { VersionHistoryDialog } from '@/components/notes/VersionHistoryDialog';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -31,12 +34,10 @@ import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import { downloadTextFile, markdownDocument, markdownFilename } from '@/lib/notes/markdown';
 import { blocksToPlainText } from '@/lib/notes/plainText';
-import { noteSchema } from '@/lib/notes/schema';
 import { formatExactTime } from '@/lib/notes/time';
 import { uploadNoteImage } from '@/lib/supabase/noteMedia';
 import { getNote } from '@/lib/supabase/notes';
-import type { Json, NoteRow } from '@/lib/supabase/types';
-import { cn } from '@/lib/utils';
+import type { FileRow, Json, NoteRow } from '@/lib/supabase/types';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -133,6 +134,7 @@ function NoteSurface({
   const [confirmTrash, setConfirmTrash] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const titleRef = useRef(title);
   const lastSaved = useRef(JSON.stringify(note.content));
   const lastTitle = useRef(note.title || 'Untitled');
@@ -194,6 +196,23 @@ function NoteSurface({
     timer.current = window.setTimeout(() => {
       void persist(currentDocument(), titleRef.current).catch(() => undefined);
     }, 900);
+  }
+
+  function linkStoredFile(file: FileRow) {
+    const block = {
+      type: 'storedFile' as const,
+      props: { fileId: file.id, name: file.name },
+    };
+    const blocks = editor.document;
+    let reference = blocks[blocks.length - 1];
+    try {
+      reference = editor.getTextCursorPosition().block;
+    } catch {
+      // The editor may not have a cursor yet. Append after the last block.
+    }
+    if (!reference) return;
+    editor.insertBlocks([block], reference, 'after');
+    scheduleSave();
   }
 
   async function flush() {
@@ -405,28 +424,34 @@ function NoteSurface({
               </button>
             ))}
             {readOnly ? null : (
-              <input
-                value={tagDraft}
-                onChange={(event) => setTagDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' && event.key !== ',') return;
-                  event.preventDefault();
-                  const name = tagDraft.trim();
-                  if (!name) return;
-                  setTagDraft('');
-                  void setTagsForNote(note.id, [...tagNames, name]).catch((error: unknown) =>
-                    toast.error(toErrorMessage(error, 'Could not add the tag.')),
-                  );
-                }}
-                placeholder="Add a tag"
-                className="h-7 min-w-24 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-              />
+              <>
+                <input
+                  value={tagDraft}
+                  onChange={(event) => setTagDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ',') return;
+                    event.preventDefault();
+                    const name = tagDraft.trim();
+                    if (!name) return;
+                    setTagDraft('');
+                    void setTagsForNote(note.id, [...tagNames, name]).catch((error: unknown) =>
+                      toast.error(toErrorMessage(error, 'Could not add the tag.')),
+                    );
+                  }}
+                  placeholder="Add a tag"
+                  className="h-7 min-w-24 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                />
+                <Button type="button" variant="ghost" size="sm" onClick={() => setFilePickerOpen(true)}>
+                  <Paperclip />
+                  Link file
+                </Button>
+              </>
             )}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Markdown export is a copy. Saga keeps this document, including image sizes and tables.
           </p>
-          <div className={cn('saga-editor mt-4', readOnly && 'pointer-events-none')}>
+          <div className="saga-editor mt-4">
             <BlockNoteView
               editor={editor}
               editable={!readOnly}
@@ -472,6 +497,7 @@ function NoteSurface({
           void deleteNoteForever(note.id).then(onLeft);
         }}
       />
+      <FilePickerDialog open={filePickerOpen} onOpenChange={setFilePickerOpen} onSelect={linkStoredFile} />
     </div>
   );
 }

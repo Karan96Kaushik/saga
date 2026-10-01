@@ -1,7 +1,7 @@
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
 import { EditorBoundary } from '@/components/notes/EditorBoundary';
-import { noteSchema } from '@/lib/notes/schema';
+import { noteSchema } from '@/components/notes/noteSchema';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';

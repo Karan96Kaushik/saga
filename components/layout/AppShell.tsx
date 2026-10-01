@@ -20,6 +20,8 @@ export function AppShell() {
   const { createNote } = useNotes();
   const query = params.get('q') ?? '';
   const onSettings = pathname === '/settings';
+  const onFiles = pathname === '/files';
+  const quietHeader = onSettings || onFiles;
 
   async function onCreate() {
     try {
@@ -49,8 +51,8 @@ export function AppShell() {
           >
             <Menu />
           </Button>
-          {onSettings ? (
-            <h1 className="font-serif text-xl">Settings</h1>
+          {quietHeader ? (
+            <h1 className="font-serif text-xl">{onFiles ? 'Files' : 'Settings'}</h1>
           ) : (
             <label className="relative min-w-0 flex-1">
               <span className="sr-only">Search notes</span>
@@ -75,7 +77,7 @@ export function AppShell() {
             </label>
           )}
           <div className="ml-auto flex items-center gap-1">
-            {onSettings ? null : (
+            {quietHeader ? null : (
               <Button type="button" size="sm" onClick={() => void onCreate()}>
                 <Plus />
                 New note
