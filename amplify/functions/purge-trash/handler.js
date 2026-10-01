@@ -4,6 +4,7 @@ import { assertRateLimit } from '../_shared/rateLimit.js';
 import { createUserClient } from '../_shared/userClient.js';
 import { currentUser } from '../_shared/supabaseUser.js';
 import { withRequiredUser } from '../_shared/verifySupabaseAuth.js';
+
 async function purge(event) {
     return withRequiredUser(event, async () => {
         const user = currentUser();
