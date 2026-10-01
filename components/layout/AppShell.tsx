@@ -21,12 +21,13 @@ export function AppShell() {
   const query = params.get('q') ?? '';
   const onSettings = pathname === '/settings';
   const onFiles = pathname === '/files';
+  const onHidden = pathname === '/hidden';
   const quietHeader = onSettings || onFiles;
 
   async function onCreate() {
     try {
-      const note = await createNote(notebookId ?? null);
-      const path = notebookId ? `/notebooks/${notebookId}` : '/';
+      const note = await createNote(notebookId ?? null, { hidden: onHidden });
+      const path = onHidden ? '/hidden' : notebookId ? `/notebooks/${notebookId}` : '/';
       navigate(`${path}?note=${note.id}`);
     } catch (error) {
       toast.error(toErrorMessage(error, 'Could not create the note.'));

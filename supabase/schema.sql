@@ -48,6 +48,7 @@ create table public.notes (
   content jsonb not null default '[]'::jsonb,
   plain_text text not null default '',
   is_pinned boolean not null default false,
+  is_hidden boolean not null default false,
   trashed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -59,6 +60,9 @@ create table public.notes (
 
 comment on column public.notes.content is
   'BlockNote document JSON. Source of truth. Do not replace with Markdown.';
+
+comment on column public.notes.is_hidden is
+  'Hidden notes stay out of the usual lists. They are not versioned separately.';
 
 create index notes_user_updated_idx on public.notes (user_id, updated_at desc);
 create index notes_user_notebook_idx on public.notes (user_id, notebook_id);

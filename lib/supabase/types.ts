@@ -29,6 +29,7 @@ export type NoteRow = {
   content: Json;
   plain_text: string;
   is_pinned: boolean;
+  is_hidden: boolean;
   trashed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -77,6 +78,7 @@ type NoteInsert = {
   content?: Json;
   plain_text?: string;
   is_pinned?: boolean;
+  is_hidden?: boolean;
   trashed_at?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -88,6 +90,7 @@ type NoteUpdate = {
   content?: Json;
   plain_text?: string;
   is_pinned?: boolean;
+  is_hidden?: boolean;
   trashed_at?: string | null;
   updated_at?: string;
 };

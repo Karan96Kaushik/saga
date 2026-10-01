@@ -5,6 +5,7 @@ import '@blocknote/core/fonts/inter.css';
 import '@blocknote/shadcn/style.css';
 import {
   Download,
+  EyeOff,
   History,
   MoreHorizontal,
   Paperclip,
@@ -119,6 +120,7 @@ function NoteSurface({
     saveNote,
     moveNote,
     setPinned,
+    setHidden,
     setTagsForNote,
     trashNote,
     restoreNote,
@@ -364,6 +366,18 @@ function NoteSurface({
               >
                 Copy Markdown
               </DropdownMenuItem>
+              {readOnly ? null : (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    void setHidden(note.id, !note.is_hidden)
+                      .then(onLeft)
+                      .catch((error: unknown) => toast.error(toErrorMessage(error, 'Could not update that note.')));
+                  }}
+                >
+                  <EyeOff />
+                  {note.is_hidden ? 'Show in all notes' : 'Hide note'}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               {readOnly ? (
                 <DropdownMenuItem

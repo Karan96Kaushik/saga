@@ -48,10 +48,11 @@ type NotesContextValue = {
   createNotebook: (name: string) => Promise<NotebookRow>;
   renameNotebook: (id: string, name: string) => Promise<void>;
   deleteNotebook: (id: string) => Promise<void>;
-  createNote: (notebookId: string | null) => Promise<NoteSummary>;
+  createNote: (notebookId: string | null, options?: { hidden?: boolean }) => Promise<NoteSummary>;
   saveNote: (id: string, input: { title: string; content: Json; plainText: string }) => Promise<void>;
   moveNote: (id: string, notebookId: string | null) => Promise<void>;
   setPinned: (id: string, pinned: boolean) => Promise<void>;
+  setHidden: (id: string, hidden: boolean) => Promise<void>;
   trashNote: (id: string) => Promise<void>;
   restoreNote: (id: string) => Promise<void>;
   deleteNoteForever: (id: string) => Promise<void>;
@@ -160,7 +161,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           current.map((note) => (note.notebook_id === id ? { ...note, notebook_id: null } : note)),
         );
       },
-      async createNote(notebookId) {
+      async createNote(notebookId, options) {
         if (!user) throw new Error('Sign in required.');
         let target = notebookId;
         if (!target) {
@@ -173,7 +174,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             target = inbox.id;
           }
         }
-        const note = await insertNote({ userId: user.id, notebookId: target });
+        const note = await insertNote({ userId: user.id, notebookId: target, hidden: options?.hidden });
         setNotes((current) => [note, ...current]);
         return note;
       },
@@ -193,8 +194,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         const updated = await updateNote(id, { isPinned: pinned });
         setNotes((current) => current.map((note) => (note.id === id ? updated : note)));
       },
+      async setHidden(id, hidden) {
+        const updated = await updateNote(id, { isHidden: hidden });
+        setNotes((current) => current.map((note) => (note.id === id ? updated : note)));
+      },
       async trashNote(id) {
-        const updated = await updateNote(id, { trashedAt: new Date().toISOString() });
+        const updated = await updateNote(id, { trashedAt: new Date().toISOString(), isHidden: false });
         setNotes((current) => current.map((note) => (note.id === id ? updated : note)));
       },
       async restoreNote(id) {

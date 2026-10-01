@@ -32,6 +32,7 @@ export function App() {
                     <Route path="tags/:tagId" element={<NotesView />} />
                     <Route path="unfiled" element={<NotesView />} />
                     <Route path="trash" element={<NotesView />} />
+                    <Route path="hidden" element={<NotesView />} />
                     <Route path="files" element={<FilesView />} />
                     <Route element={<SignedInOnly />}>
                       <Route path="settings" element={<SettingsView />} />

@@ -4,7 +4,7 @@ import { supabase } from '@/utils/supabase';
 type NoteUpdate = Database['public']['Tables']['notes']['Update'];
 
 const SUMMARY_COLUMNS =
-  'id, user_id, notebook_id, title, plain_text, is_pinned, trashed_at, created_at, updated_at' as const;
+  'id, user_id, notebook_id, title, plain_text, is_pinned, is_hidden, trashed_at, created_at, updated_at' as const;
 
 const DETAIL_COLUMNS = `${SUMMARY_COLUMNS}, content` as const;
 
@@ -27,6 +27,7 @@ export async function createNote(input: {
   userId: string;
   notebookId: string | null;
   title?: string;
+  hidden?: boolean;
 }): Promise<NoteSummary> {
   const { data, error } = await supabase
     .from('notes')
@@ -36,6 +37,7 @@ export async function createNote(input: {
       title: input.title ?? 'Untitled',
       content: [],
       plain_text: '',
+      is_hidden: input.hidden ?? false,
     })
     .select(SUMMARY_COLUMNS)
     .single();
@@ -51,6 +53,7 @@ export async function updateNote(
     content?: Json;
     plainText?: string;
     isPinned?: boolean;
+    isHidden?: boolean;
     trashedAt?: string | null;
   },
 ): Promise<NoteSummary> {
@@ -60,6 +63,7 @@ export async function updateNote(
   if (patch.content !== undefined) update.content = patch.content;
   if (patch.plainText !== undefined) update.plain_text = patch.plainText;
   if (patch.isPinned !== undefined) update.is_pinned = patch.isPinned;
+  if (patch.isHidden !== undefined) update.is_hidden = patch.isHidden;
   if (patch.trashedAt !== undefined) update.trashed_at = patch.trashedAt;
 
   const { data, error } = await supabase.from('notes').update(update).eq('id', id)

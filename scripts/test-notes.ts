@@ -1,5 +1,6 @@
 import { markdownDocument } from '../lib/notes/markdown.ts';
 import { mediaPathsFromContent } from '../lib/notes/media.ts';
+import { nextAllNotesTap } from '../lib/notes/hiddenTap.ts';
 import { blocksToPlainText } from '../lib/notes/plainText.ts';
 import { selectNotes } from '../lib/notes/selectNotes.ts';
 import type { NoteSummary, NoteTagRow } from '../lib/supabase/types.ts';
@@ -54,6 +55,7 @@ const notes: NoteSummary[] = [
   note('2', 'Beta', 'berries', true, null, 'nb-1', '2026-01-01T00:00:00.000Z'),
   note('3', 'Gone', 'trash me', false, '2026-01-03T00:00:00.000Z', null, '2026-01-03T00:00:00.000Z'),
   note('4', 'Loose', 'unfiled pears', false, null, null, '2026-01-04T00:00:00.000Z'),
+  note('5', 'Quiet', 'vault key', false, null, 'nb-1', '2026-01-05T00:00:00.000Z', true),
 ];
 
 const noteTags: NoteTagRow[] = [{ note_id: '1', tag_id: 'tag-1', user_id: 'user-1' }];
@@ -70,6 +72,18 @@ assert(trashed.length === 1 && trashed[0]?.id === '3', 'trash filter hides activ
 const tagged = selectNotes(notes, noteTags, { kind: 'tag', tagId: 'tag-1' }, '');
 assert(tagged.length === 1 && tagged[0]?.id === '1', 'tag filter uses note tags');
 
+const hidden = selectNotes(notes, noteTags, { kind: 'hidden' }, '');
+assert(hidden.length === 1 && hidden[0]?.id === '5', 'hidden view lists only hidden notes');
+assert(selectNotes(notes, noteTags, { kind: 'all' }, 'vault').length === 0, 'search skips hidden notes');
+assert(selectNotes(notes, noteTags, { kind: 'hidden' }, 'vault').length === 1, 'hidden search stays inside hidden notes');
+assert(selectNotes(notes, noteTags, { kind: 'notebook', notebookId: 'nb-1' }, '').every((item) => item.id !== '5'), 'notebooks skip hidden notes');
+
+const first = nextAllNotesTap([], 1_000);
+const second = nextAllNotesTap(first.times, 1_200);
+const third = nextAllNotesTap(second.times, 1_400);
+assert(!first.openHidden && !second.openHidden && third.openHidden, 'three taps open hidden notes');
+assert(nextAllNotesTap(second.times, 1_200 + 601).openHidden === false, 'a late third tap stays on all notes');
+
 assert(markdownDocument('Field notes', 'Body').startsWith('# Field notes\n\nBody'), 'markdown export adds a title');
 assert(!markdownDocument('Field notes', 'Body').includes('previewWidth'), 'markdown export is separate from the document');
 
@@ -83,6 +97,7 @@ function note(
   trashedAt: string | null,
   notebookId: string | null,
   updatedAt: string,
+  isHidden = false,
 ): NoteSummary {
   return {
     id,
@@ -91,6 +106,7 @@ function note(
     title,
     plain_text: plainText,
     is_pinned: isPinned,
+    is_hidden: isHidden,
     trashed_at: trashedAt,
     created_at: updatedAt,
     updated_at: updatedAt,

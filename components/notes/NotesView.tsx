@@ -9,6 +9,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import { selectNotes, type NoteFilter } from '@/lib/notes/selectNotes';
+import type { NoteSummary } from '@/lib/supabase/types';
 
 export function NotesView() {
   const { notebookId, tagId } = useParams();
@@ -21,26 +22,28 @@ export function NotesView() {
   const query = params.get('q') ?? '';
   const noteId = params.get('note');
 
-  const filter: NoteFilter = pathname.startsWith('/trash')
-    ? { kind: 'trash' }
-    : pathname.startsWith('/unfiled')
-      ? { kind: 'unfiled' }
-      : notebookId
-        ? { kind: 'notebook', notebookId }
-        : tagId
-          ? { kind: 'tag', tagId }
-          : { kind: 'all' };
+  const filter: NoteFilter = pathname.startsWith('/hidden')
+    ? { kind: 'hidden' }
+    : pathname.startsWith('/trash')
+      ? { kind: 'trash' }
+      : pathname.startsWith('/unfiled')
+        ? { kind: 'unfiled' }
+        : notebookId
+          ? { kind: 'notebook', notebookId }
+          : tagId
+            ? { kind: 'tag', tagId }
+            : { kind: 'all' };
 
   const visible = selectNotes(notes, noteTags, filter, query);
   const selected = notes.find((note) => note.id === noteId) ?? null;
-  const trashView = filter.kind === 'trash';
-  const editorNote =
-    selected && (trashView ? selected.trashed_at !== null : selected.trashed_at === null) ? selected : null;
+  const editorNote = selected && noteMatchesFilter(selected, filter) ? selected : null;
 
   const openNewRef = useRef<() => Promise<void>>(async () => undefined);
 
   async function openNew() {
-    const note = await createNote(filter.kind === 'notebook' ? filter.notebookId : null);
+    const note = await createNote(filter.kind === 'notebook' ? filter.notebookId : null, {
+      hidden: filter.kind === 'hidden',
+    });
     setParams((current) => {
       const next = new URLSearchParams(current);
       next.set('note', note.id);
@@ -87,7 +90,9 @@ export function NotesView() {
         ? 'All notes'
         : filter.kind === 'trash'
           ? 'Trash'
-          : filter.kind === 'unfiled'
+          : filter.kind === 'hidden'
+            ? 'Hidden'
+            : filter.kind === 'unfiled'
             ? 'Unfiled'
             : filter.kind === 'notebook'
               ? (notebooks.find((notebook) => notebook.id === filter.notebookId)?.name ?? 'Notebook')
@@ -115,7 +120,7 @@ export function NotesView() {
                 {visible.length} {visible.length === 1 ? 'note' : 'notes'}
               </p>
             </div>
-            {filter.kind === 'trash' && notes.some((note) => note.trashed_at !== null) ? (
+            {filter.kind === 'trash' && notes.some((note) => note.trashed_at !== null && !note.is_hidden) ? (
               <Button type="button" variant="outline" size="sm" onClick={() => setConfirmEmpty(true)}>
                 Empty trash
               </Button>
@@ -139,7 +144,7 @@ export function NotesView() {
                     note={note}
                     selected={note.id === editorNote?.id}
                     notebookName={
-                      filter.kind === 'all'
+                      filter.kind === 'all' || filter.kind === 'hidden'
                         ? notebooks.find((notebook) => notebook.id === note.notebook_id)?.name
                         : undefined
                     }
@@ -198,9 +203,16 @@ export function NotesView() {
   );
 }
 
+function noteMatchesFilter(note: NoteSummary, filter: NoteFilter): boolean {
+  if (filter.kind === 'hidden') return note.is_hidden && note.trashed_at === null;
+  if (filter.kind === 'trash') return note.trashed_at !== null && !note.is_hidden;
+  return note.trashed_at === null && !note.is_hidden;
+}
+
 function emptyCopy(filter: NoteFilter, query: string): string {
   if (query.trim()) return 'No notes match that search.';
   if (filter.kind === 'trash') return 'Trash is empty.';
+  if (filter.kind === 'hidden') return 'No hidden notes.';
   if (filter.kind === 'notebook') return 'This notebook is waiting for its first note.';
   if (filter.kind === 'tag') return 'No notes use this tag yet.';
   if (filter.kind === 'unfiled') return 'Every note is in a notebook.';

@@ -5,7 +5,8 @@ export type NoteFilter =
   | { kind: 'trash' }
   | { kind: 'unfiled' }
   | { kind: 'notebook'; notebookId: string }
-  | { kind: 'tag'; tagId: string };
+  | { kind: 'tag'; tagId: string }
+  | { kind: 'hidden' };
 
 function byRecency(a: NoteSummary, b: NoteSummary): number {
   if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
@@ -28,9 +29,12 @@ export function selectNotes(
   return notes
     .filter((note) => {
       const inTrash = note.trashed_at !== null;
-      if (filter.kind === 'trash') {
-        if (!inTrash) return false;
-      } else if (inTrash) {
+      const hidden = note.is_hidden;
+      if (filter.kind === 'hidden') {
+        if (!hidden || inTrash) return false;
+      } else if (filter.kind === 'trash') {
+        if (!inTrash || hidden) return false;
+      } else if (inTrash || hidden) {
         return false;
       }
 
