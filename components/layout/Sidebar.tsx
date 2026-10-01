@@ -1,6 +1,6 @@
 import { Hash, Inbox, Notebook, Paperclip, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router';
+import { useRef, useState, type FormEvent } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { Logo } from '@/components/layout/Logo';
 import { CountStat } from '@/components/metrics/CountStat';
@@ -15,7 +15,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFiles } from '@/hooks/useFiles';
 import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
-import { nextAllNotesTap } from '@/lib/notes/hiddenTap';
 import type { NotebookRow, TagRow } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
 
@@ -40,10 +39,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   } = useNotes();
   const { files } = useFiles();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const skipRename = useRef(false);
-  const allNotesTaps = useRef<number[]>([]);
-  const allNotesTimer = useRef<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState('');
   const [renaming, setRenaming] = useState<NotebookRow | null>(null);
@@ -69,32 +65,6 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      if (allNotesTimer.current) window.clearTimeout(allNotesTimer.current);
-    };
-  }, []);
-
-  function onAllNotesClick(event: MouseEvent<HTMLAnchorElement>) {
-    const next = nextAllNotesTap(allNotesTaps.current, Date.now());
-    allNotesTaps.current = next.times;
-    if (next.openHidden) {
-      event.preventDefault();
-      if (allNotesTimer.current) window.clearTimeout(allNotesTimer.current);
-      navigate('/hidden');
-      onNavigate?.();
-      return;
-    }
-    if (!onNavigate) return;
-    event.preventDefault();
-    if (allNotesTimer.current) window.clearTimeout(allNotesTimer.current);
-    allNotesTimer.current = window.setTimeout(() => {
-      allNotesTaps.current = [];
-      navigate('/');
-      onNavigate();
-    }, 600);
-  }
-
   return (
     <div className="flex h-full min-h-0 w-full flex-col px-3 py-4">
       <div className="px-2">
@@ -103,7 +73,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="mt-6 space-y-1" aria-label="Notes">
-        <NavLink to="/" end className={({ isActive }) => navClass(isActive)} onClick={onAllNotesClick}>
+        <NavLink to="/" end className={({ isActive }) => navClass(isActive)} onClick={onNavigate}>
           <Inbox className="size-4" />
           All notes
         </NavLink>

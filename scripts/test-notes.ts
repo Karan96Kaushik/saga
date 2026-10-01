@@ -1,6 +1,6 @@
 import { markdownDocument } from '../lib/notes/markdown.ts';
 import { mediaPathsFromContent } from '../lib/notes/media.ts';
-import { nextAllNotesTap } from '../lib/notes/hiddenTap.ts';
+import { HIDDEN_OVERSCROLL_PX, nextListOverscroll } from '../lib/notes/listOverscroll.ts';
 import { blocksToPlainText } from '../lib/notes/plainText.ts';
 import { selectNotes } from '../lib/notes/selectNotes.ts';
 import type { NoteSummary, NoteTagRow } from '../lib/supabase/types.ts';
@@ -78,11 +78,13 @@ assert(selectNotes(notes, noteTags, { kind: 'all' }, 'vault').length === 0, 'sea
 assert(selectNotes(notes, noteTags, { kind: 'hidden' }, 'vault').length === 1, 'hidden search stays inside hidden notes');
 assert(selectNotes(notes, noteTags, { kind: 'notebook', notebookId: 'nb-1' }, '').every((item) => item.id !== '5'), 'notebooks skip hidden notes');
 
-const first = nextAllNotesTap([], 1_000);
-const second = nextAllNotesTap(first.times, 1_200);
-const third = nextAllNotesTap(second.times, 1_400);
-assert(!first.openHidden && !second.openHidden && third.openHidden, 'three taps open hidden notes');
-assert(nextAllNotesTap(second.times, 1_200 + 601).openHidden === false, 'a late third tap stays on all notes');
+const idle = { accumulated: 0, at: 0 };
+const short = nextListOverscroll(idle, 1_000, 40, true);
+assert(!short.openHidden, 'a short scroll at the bottom stays on the list');
+const opened = nextListOverscroll(short, 1_050, HIDDEN_OVERSCROLL_PX, true);
+assert(opened.openHidden, 'a long scroll at the bottom opens hidden notes');
+assert(!nextListOverscroll(short, 1_050, 80, false).openHidden, 'scrolling before the bottom does not open hidden notes');
+assert(!nextListOverscroll({ accumulated: HIDDEN_OVERSCROLL_PX - 10, at: 1_000 }, 1_800, 40, true).openHidden, 'a paused scroll starts over');
 
 assert(markdownDocument('Field notes', 'Body').startsWith('# Field notes\n\nBody'), 'markdown export adds a title');
 assert(!markdownDocument('Field notes', 'Body').includes('previewWidth'), 'markdown export is separate from the document');

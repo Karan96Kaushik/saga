@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { NoteEditor } from '@/components/notes/NoteEditor';
@@ -9,11 +9,13 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import { selectNotes, type NoteFilter } from '@/lib/notes/selectNotes';
+import { nextListOverscroll, type OverscrollState } from '@/lib/notes/listOverscroll';
 import type { NoteSummary } from '@/lib/supabase/types';
 
 export function NotesView() {
   const { notebookId, tagId } = useParams();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const { loading, error, notebooks, notes, tags, noteTags, createNote, emptyTrash } = useNotes();
@@ -39,6 +41,8 @@ export function NotesView() {
   const editorNote = selected && noteMatchesFilter(selected, filter) ? selected : null;
 
   const openNewRef = useRef<() => Promise<void>>(async () => undefined);
+  const listRef = useRef<HTMLDivElement>(null);
+  const overscroll = useRef<OverscrollState>({ accumulated: 0, at: 0 });
 
   async function openNew() {
     const note = await createNote(filter.kind === 'notebook' ? filter.notebookId : null, {
@@ -53,6 +57,54 @@ export function NotesView() {
   }
 
   openNewRef.current = openNew;
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || filter.kind !== 'all' || query.trim()) return;
+    const scroller = list;
+
+    function atBottom() {
+      return scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+    }
+
+    function consider(delta: number) {
+      const next = nextListOverscroll(overscroll.current, Date.now(), delta, atBottom());
+      overscroll.current = { accumulated: next.accumulated, at: next.at };
+      if (next.openHidden) navigate('/hidden');
+    }
+
+    function onWheel(event: WheelEvent) {
+      const distance =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? event.deltaY * 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? event.deltaY * scroller.clientHeight
+            : event.deltaY;
+      if (distance > 0 && atBottom()) event.preventDefault();
+      consider(distance);
+    }
+
+    let lastY = 0;
+    function onTouchStart(event: TouchEvent) {
+      lastY = event.touches[0]?.clientY ?? 0;
+    }
+    function onTouchMove(event: TouchEvent) {
+      const y = event.touches[0]?.clientY ?? lastY;
+      const delta = lastY - y;
+      lastY = y;
+      if (delta > 0 && atBottom()) event.preventDefault();
+      consider(delta);
+    }
+
+    scroller.addEventListener('wheel', onWheel, { passive: false });
+    scroller.addEventListener('touchstart', onTouchStart, { passive: true });
+    scroller.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      scroller.removeEventListener('wheel', onWheel);
+      scroller.removeEventListener('touchstart', onTouchStart);
+      scroller.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [filter.kind, navigate, query, visible.length, loading, isMobile, editorNote?.id]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -126,7 +178,7 @@ export function NotesView() {
               </Button>
             ) : null}
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
             {visible.length === 0 ? (
               <div className="px-3 py-10 text-sm text-muted-foreground">
                 <p>{emptyCopy(filter, query)}</p>
