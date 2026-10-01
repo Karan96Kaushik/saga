@@ -1,5 +1,5 @@
--- File library. Not versioned. The app deletes the object, then the row.
--- This trigger clears the storage record if the row goes away on its own.
+-- File library. Not versioned. The app deletes the object through the
+-- Storage API, then deletes the row.
 
 create table public.files (
   id uuid primary key default gen_random_uuid(),
@@ -32,28 +32,6 @@ with check (user_id = auth.uid());
 create policy files_delete on public.files
 for delete to authenticated
 using (user_id = auth.uid());
-
-create or replace function public.delete_library_object()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  delete from storage.objects
-  where bucket_id = 'library'
-    and name = old.storage_path;
-  return old;
-end;
-$$;
-
-create trigger files_delete_object
-before delete on public.files
-for each row
-execute function public.delete_library_object();
-
-revoke all on function public.delete_library_object() from public;
-grant execute on function public.delete_library_object() to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('library', 'library', false, 26214400)

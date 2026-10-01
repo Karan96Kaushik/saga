@@ -52,7 +52,7 @@ export async function uploadLibraryFile(userId: string, file: File): Promise<Fil
   return data;
 }
 
-/** Removes the stored object, then the row. The row delete also clears any leftover storage record. */
+/** Removes the stored object through the Storage API, then deletes the row. */
 export async function deleteLibraryFile(id: string): Promise<void> {
   const file = await getFile(id);
   if (!file) return;

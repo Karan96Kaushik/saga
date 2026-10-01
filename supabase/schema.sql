@@ -4,7 +4,8 @@
 -- plain_text is a derived search field. Markdown is not stored.
 -- note_versions keeps earlier documents. A before-update trigger writes the
 -- previous title and content at most once a minute.
--- files is a separate library. It has no versions. Deleting a row deletes the object.
+-- files is a separate library. It has no versions. The app deletes the object
+-- through the Storage API, then deletes the row.
 
 create extension if not exists pgcrypto;
 
@@ -399,9 +400,9 @@ using (
 );
 
 -- ---------------------------------------------------------------------------
--- File library. One row per file, no history. The app deletes the object,
--- then the row. This trigger clears the storage record if the row goes away
--- on its own, including when the account is deleted.
+-- File library. One row per file, no history. The app deletes the object
+-- through the Storage API, then deletes the row. Supabase rejects direct
+-- deletes from storage.objects.
 -- ---------------------------------------------------------------------------
 
 create table public.files (
@@ -435,28 +436,6 @@ with check (user_id = auth.uid());
 create policy files_delete on public.files
 for delete to authenticated
 using (user_id = auth.uid());
-
-create or replace function public.delete_library_object()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  delete from storage.objects
-  where bucket_id = 'library'
-    and name = old.storage_path;
-  return old;
-end;
-$$;
-
-create trigger files_delete_object
-before delete on public.files
-for each row
-execute function public.delete_library_object();
-
-revoke all on function public.delete_library_object() from public;
-grant execute on function public.delete_library_object() to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('library', 'library', false, 26214400)
