@@ -8,6 +8,7 @@ import { SignedInOnly } from '@/components/auth/SignedInOnly';
 import { FilesView } from '@/components/files/FilesView';
 import { AppShell } from '@/components/layout/AppShell';
 import { NotesView } from '@/components/notes/NotesView';
+import { SharedNoteView } from '@/components/notes/SharedNoteView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -23,8 +24,9 @@ export function App() {
           <FilesProvider>
             <NotesProvider>
               <Routes>
-                <Route path="/login" element={<LoginView />} />
-                <Route path="/reset-password" element={<ResetPasswordView />} />
+              <Route path="/login" element={<LoginView />} />
+              <Route path="/reset-password" element={<ResetPasswordView />} />
+              <Route path="/s/:shareId" element={<SharedNoteView />} />
                 <Route element={<RequireAuth />}>
                   <Route element={<AppShell />}>
                     <Route index element={<NotesView />} />

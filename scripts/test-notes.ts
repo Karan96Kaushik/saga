@@ -1,6 +1,8 @@
 import { markdownDocument } from '../lib/notes/markdown.ts';
 import { mediaPathsFromContent } from '../lib/notes/media.ts';
 import { HIDDEN_OVERSCROLL_PX, nextListOverscroll } from '../lib/notes/listOverscroll.ts';
+import { isUuid } from '../lib/notes/ids.ts';
+import { shouldApplyRemote } from '../lib/notes/liveNote.ts';
 import { blocksToPlainText } from '../lib/notes/plainText.ts';
 import { selectNotes } from '../lib/notes/selectNotes.ts';
 import type { NoteSummary, NoteTagRow } from '../lib/supabase/types.ts';
@@ -85,6 +87,41 @@ const opened = nextListOverscroll(short, 1_050, HIDDEN_OVERSCROLL_PX, true);
 assert(opened.openHidden, 'a long scroll at the bottom opens hidden notes');
 assert(!nextListOverscroll(short, 1_050, 80, false).openHidden, 'scrolling before the bottom does not open hidden notes');
 assert(!nextListOverscroll({ accumulated: HIDDEN_OVERSCROLL_PX - 10, at: 1_000 }, 1_800, 40, true).openHidden, 'a paused scroll starts over');
+
+assert(shouldApplyRemote({
+  readOnly: true,
+  dirty: true,
+  localTitle: 'A',
+  localContent: '[]',
+  remoteTitle: 'B',
+  remoteContent: '[{"type":"paragraph"}]',
+}), 'a read-only copy follows the shared note');
+assert(!shouldApplyRemote({
+  readOnly: false,
+  dirty: true,
+  localTitle: 'A',
+  localContent: '[]',
+  remoteTitle: 'B',
+  remoteContent: '[{"type":"paragraph"}]',
+}), 'unsaved local edits stay until the next save');
+assert(shouldApplyRemote({
+  readOnly: false,
+  dirty: false,
+  localTitle: 'A',
+  localContent: '[]',
+  remoteTitle: 'B',
+  remoteContent: '[{"type":"paragraph"}]',
+}), 'a clean editor takes the remote document');
+assert(!shouldApplyRemote({
+  readOnly: false,
+  dirty: false,
+  localTitle: 'A',
+  localContent: '[]',
+  remoteTitle: 'A',
+  remoteContent: '[]',
+}), 'an identical document is left alone');
+assert(isUuid('11111111-1111-4111-8111-111111111111'), 'share ids are uuids');
+assert(!isUuid('not-a-share-id'), 'other strings are not share ids');
 
 assert(markdownDocument('Field notes', 'Body').startsWith('# Field notes\n\nBody'), 'markdown export adds a title');
 assert(!markdownDocument('Field notes', 'Body').includes('previewWidth'), 'markdown export is separate from the document');

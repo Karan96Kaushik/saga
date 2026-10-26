@@ -60,6 +60,22 @@ export type NoteTagRow = {
   user_id: string;
 };
 
+export type NoteShareRow = {
+  id: string;
+  note_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type SharedNote = {
+  share_id: string;
+  note_id: string;
+  title: string;
+  content: Json;
+  updated_at: string;
+  is_owner: boolean;
+};
+
 export type FileRow = {
   id: string;
   user_id: string;
@@ -180,12 +196,36 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      note_shares: {
+        Row: NoteShareRow;
+        Insert: {
+          id?: string;
+          note_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       checkpoint_note: {
         Args: { p_note_id: string };
         Returns: NoteVersionRow;
+      };
+      get_shared_note: {
+        Args: { p_share_id: string };
+        Returns: SharedNote[];
+      };
+      save_shared_note: {
+        Args: {
+          p_share_id: string;
+          p_title: string;
+          p_content: Json;
+          p_plain_text: string;
+        };
+        Returns: string;
       };
     };
     Enums: Record<string, never>;

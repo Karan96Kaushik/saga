@@ -35,6 +35,8 @@ import {
   replaceNoteTags,
 } from '@/lib/supabase/tags';
 import type { Json, NotebookRow, NoteSummary, NoteTagRow, TagRow } from '@/lib/supabase/types';
+import { isUuid } from '@/lib/notes/ids';
+import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
 type NotesContextValue = {
@@ -134,6 +136,37 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId || !isUuid(userId)) return;
+    const channel = supabase
+      .channel(`saga-notes:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notes', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const id = (payload.old as { id?: unknown }).id;
+            if (typeof id !== 'string') return;
+            setNotes((current) => current.filter((note) => note.id !== id));
+            setNoteTags((current) => current.filter((row) => row.note_id !== id));
+            return;
+          }
+          const summary = summaryFromRealtime(payload.new);
+          if (!summary) return;
+          setNotes((current) => {
+            const exists = current.some((note) => note.id === summary.id);
+            if (!exists) return [summary, ...current];
+            return current.map((note) => (note.id === summary.id ? summary : note));
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const value = useMemo<NotesContextValue>(() => {
     return {
@@ -281,4 +314,25 @@ export function useNotes() {
   const value = useContext(NotesContext);
   if (!value) throw new Error('useNotes must be used within NotesProvider');
   return value;
+}
+
+function summaryFromRealtime(value: unknown): NoteSummary | null {
+  if (!value || typeof value !== 'object') return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== 'string' || typeof row.user_id !== 'string') return null;
+  if (typeof row.title !== 'string' || typeof row.updated_at !== 'string' || typeof row.created_at !== 'string') {
+    return null;
+  }
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    notebook_id: typeof row.notebook_id === 'string' ? row.notebook_id : null,
+    title: row.title,
+    plain_text: typeof row.plain_text === 'string' ? row.plain_text : '',
+    is_pinned: row.is_pinned === true,
+    is_hidden: row.is_hidden === true,
+    trashed_at: typeof row.trashed_at === 'string' ? row.trashed_at : null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
 }

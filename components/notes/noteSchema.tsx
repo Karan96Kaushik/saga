@@ -2,6 +2,7 @@ import { BlockNoteSchema } from '@blocknote/core';
 import { createReactBlockSpec } from '@blocknote/react';
 import { Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 import { useFiles } from '@/hooks/useFiles';
 import { toErrorMessage } from '@/lib/errors';
 import { formatFileSize } from '@/lib/files/format';
@@ -34,6 +35,7 @@ export const noteSchema = BlockNoteSchema.create({
 });
 
 function StoredFileChip({ fileId, name }: { fileId: string; name: string }) {
+  const { user } = useAuth();
   const { files, ready, download } = useFiles();
   const row = files.find((file) => file.id === fileId);
   const missing = ready && Boolean(fileId) && !row;
@@ -57,6 +59,10 @@ function StoredFileChip({ fileId, name }: { fileId: string; name: string }) {
         event.preventDefault();
         event.stopPropagation();
         if (!fileId) return;
+        if (!user) {
+          toast.error('Sign in to open linked files.');
+          return;
+        }
         void download(fileId).catch((error: unknown) => {
           toast.error(toErrorMessage(error, 'Could not open that file.'));
         });

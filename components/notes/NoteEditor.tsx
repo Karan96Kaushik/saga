@@ -12,6 +12,7 @@ import {
   Pin,
   PinOff,
   RotateCcw,
+  Share2,
   Trash2,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -20,6 +21,7 @@ import { toast } from 'sonner';
 import { FilePickerDialog } from '@/components/files/FilePickerDialog';
 import { EditorBoundary } from '@/components/notes/EditorBoundary';
 import { noteSchema } from '@/components/notes/noteSchema';
+import { ShareNoteDialog } from '@/components/notes/ShareNoteDialog';
 import { VersionHistoryDialog } from '@/components/notes/VersionHistoryDialog';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -31,13 +33,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useLiveNote } from '@/hooks/useLiveNote';
 import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import { downloadTextFile, markdownDocument, markdownFilename } from '@/lib/notes/markdown';
 import { blocksToPlainText } from '@/lib/notes/plainText';
+import { shouldApplyRemote } from '@/lib/notes/liveNote';
 import { formatExactTime } from '@/lib/notes/time';
 import { uploadNoteImage } from '@/lib/supabase/noteMedia';
 import { getNote } from '@/lib/supabase/notes';
+import { getNoteShare } from '@/lib/supabase/shares';
 import type { FileRow, Json, NoteRow } from '@/lib/supabase/types';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -137,6 +142,8 @@ function NoteSurface({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [filePickerOpen, setFilePickerOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareId, setShareId] = useState<string | null>(null);
   const titleRef = useRef(title);
   const lastSaved = useRef(JSON.stringify(note.content));
   const lastTitle = useRef(note.title || 'Untitled');
@@ -166,6 +173,62 @@ function NoteSurface({
     [],
   );
 
+  const { publish } = useLiveNote({
+    noteId: note.id,
+    shareId,
+    listenToDatabase: user?.id === note.user_id,
+    handlers: {
+      onDocument: (update) => applyRemote(update.title, update.content),
+      onSharePing: () => {
+        void getNote(note.id)
+          .then((row) => applyRemote(row.title, row.content))
+          .catch(() => undefined);
+      },
+      onRevoked: () => setShareId(null),
+    },
+  });
+
+  useEffect(() => {
+    let active = true;
+    void getNoteShare(note.id)
+      .then((id) => {
+        if (active) setShareId(id);
+      })
+      .catch(() => {
+        if (active) setShareId(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [note.id]);
+
+  function applyRemote(nextTitle: string, content: Json) {
+    const remoteContent = JSON.stringify(content);
+    const remoteTitle = nextTitle.trim() || 'Untitled';
+    const localContent = JSON.stringify(editor.document);
+    if (
+      !shouldApplyRemote({
+        readOnly,
+        dirty: dirty.current,
+        localTitle: titleRef.current.trim() || 'Untitled',
+        localContent,
+        remoteTitle,
+        remoteContent,
+      })
+    ) {
+      return;
+    }
+    if (Array.isArray(content) && content.length > 0) {
+      editor.replaceBlocks(editor.document, content as never);
+    }
+    setTitle(remoteTitle);
+    titleRef.current = remoteTitle;
+    lastSaved.current = remoteContent;
+    lastTitle.current = remoteTitle;
+    dirty.current = false;
+    setStatus('saved');
+  }
+
   async function persist(content: Json, nextTitle: string) {
     const serialized = JSON.stringify(content);
     const normalizedTitle = nextTitle.trim() || 'Untitled';
@@ -179,7 +242,9 @@ function NoteSurface({
       });
       lastSaved.current = serialized;
       lastTitle.current = normalizedTitle;
+      dirty.current = false;
       setStatus('saved');
+      if (shareId) void publish({ updatedAt: new Date().toISOString() });
     } catch (error) {
       setStatus('error');
       toast.error(toErrorMessage(error, 'Could not save this note.'));
@@ -235,7 +300,7 @@ function NoteSurface({
         title: normalizedTitle,
         content,
         plainText: blocksToPlainText(content),
-      });
+      }).then(() => publish({ updatedAt: new Date().toISOString() }));
     };
     // Flush the latest document when leaving this note. saveRef stays current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -336,6 +401,11 @@ function NoteSurface({
           >
             {pinned ? <PinOff /> : <Pin />}
           </Button>
+          {readOnly ? null : (
+            <Button type="button" variant="ghost" size="icon" aria-label="Share note" onClick={() => setShareOpen(true)}>
+              <Share2 />
+            </Button>
+          )}
           <Button type="button" variant="ghost" size="icon" aria-label="Version history" onClick={() => setHistoryOpen(true)}>
             <History />
           </Button>
@@ -512,6 +582,14 @@ function NoteSurface({
         }}
       />
       <FilePickerDialog open={filePickerOpen} onOpenChange={setFilePickerOpen} onSelect={linkStoredFile} />
+      <ShareNoteDialog
+        noteId={note.id}
+        shareId={shareId}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        onShareId={setShareId}
+        onBeforeRevoke={() => publish({ revoked: true })}
+      />
     </div>
   );
 }
