@@ -2,7 +2,7 @@ import { markdownDocument } from '../lib/notes/markdown.ts';
 import { mediaPathsFromContent } from '../lib/notes/media.ts';
 import { HIDDEN_OVERSCROLL_PX, nextListOverscroll } from '../lib/notes/listOverscroll.ts';
 import { isUuid } from '../lib/notes/ids.ts';
-import { shouldApplyRemote } from '../lib/notes/liveNote.ts';
+import { isOwnWrite, shouldApplyRemote } from '../lib/notes/liveNote.ts';
 import { blocksToPlainText } from '../lib/notes/plainText.ts';
 import { selectNotes } from '../lib/notes/selectNotes.ts';
 import type { NoteSummary, NoteTagRow } from '../lib/supabase/types.ts';
@@ -120,6 +120,16 @@ assert(!shouldApplyRemote({
   remoteTitle: 'A',
   remoteContent: '[]',
 }), 'an identical document is left alone');
+assert(!shouldApplyRemote({
+  readOnly: false,
+  dirty: false,
+  localTitle: 'A',
+  localContent: '[{"id":"1","type":"paragraph","props":{"a":1,"b":2}}]',
+  remoteTitle: 'A',
+  remoteContent: '[{"props":{"b":2,"a":1},"type":"paragraph","id":"1"}]',
+}), 'the writer ignores its own save when JSON key order differs');
+assert(isOwnWrite('2026-10-26T08:13:00.123456+00:00', [Date.parse('2026-10-26T08:13:00.123Z')]), 'a save echo matches the write');
+assert(!isOwnWrite('2026-10-26T08:13:02.000Z', [Date.parse('2026-10-26T08:13:00.123Z')]), 'another person\'s save is not our write');
 assert(isUuid('11111111-1111-4111-8111-111111111111'), 'share ids are uuids');
 assert(!isUuid('not-a-share-id'), 'other strings are not share ids');
 

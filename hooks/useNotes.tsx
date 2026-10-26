@@ -51,7 +51,7 @@ type NotesContextValue = {
   renameNotebook: (id: string, name: string) => Promise<void>;
   deleteNotebook: (id: string) => Promise<void>;
   createNote: (notebookId: string | null, options?: { hidden?: boolean }) => Promise<NoteSummary>;
-  saveNote: (id: string, input: { title: string; content: Json; plainText: string }) => Promise<void>;
+  saveNote: (id: string, input: { title: string; content: Json; plainText: string }) => Promise<string>;
   moveNote: (id: string, notebookId: string | null) => Promise<void>;
   setPinned: (id: string, pinned: boolean) => Promise<void>;
   setHidden: (id: string, hidden: boolean) => Promise<void>;
@@ -218,6 +218,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           plainText: input.plainText,
         });
         setNotes((current) => current.map((note) => (note.id === id ? updated : note)));
+        return updated.updated_at;
       },
       async moveNote(id, notebookId) {
         const updated = await updateNote(id, { notebookId });
