@@ -51,7 +51,7 @@ type NotesContextValue = {
   renameNotebook: (id: string, name: string) => Promise<void>;
   deleteNotebook: (id: string) => Promise<void>;
   createNote: (notebookId: string | null, options?: { hidden?: boolean }) => Promise<NoteSummary>;
-  saveNote: (id: string, input: { title: string; content: Json; plainText: string }) => Promise<string>;
+  saveNote: (id: string, input: { title: string; content: Json; plainText: string; editorId: string }) => Promise<string>;
   moveNote: (id: string, notebookId: string | null) => Promise<void>;
   setPinned: (id: string, pinned: boolean) => Promise<void>;
   setHidden: (id: string, hidden: boolean) => Promise<void>;
@@ -216,6 +216,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           title: input.title,
           content: input.content,
           plainText: input.plainText,
+          editorId: input.editorId,
         });
         setNotes((current) => current.map((note) => (note.id === id ? updated : note)));
         return updated.updated_at;
@@ -332,6 +333,7 @@ function summaryFromRealtime(value: unknown): NoteSummary | null {
     plain_text: typeof row.plain_text === 'string' ? row.plain_text : '',
     is_pinned: row.is_pinned === true,
     is_hidden: row.is_hidden === true,
+    editor_id: typeof row.editor_id === 'string' ? row.editor_id : null,
     trashed_at: typeof row.trashed_at === 'string' ? row.trashed_at : null,
     created_at: row.created_at,
     updated_at: row.updated_at,

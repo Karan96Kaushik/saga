@@ -8,6 +8,7 @@ export type LiveDocument = {
   title: string;
   content: Json;
   updatedAt: string;
+  editorId: string | null;
 };
 
 type Handlers = {
@@ -56,9 +57,19 @@ export function useLiveNote(options: {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'notes', filter: `id=eq.${noteId}` },
         (payload) => {
-          const row = payload.new as { title?: unknown; content?: unknown; updated_at?: unknown };
+          const row = payload.new as {
+            title?: unknown;
+            content?: unknown;
+            updated_at?: unknown;
+            editor_id?: unknown;
+          };
           if (typeof row.title !== 'string' || typeof row.updated_at !== 'string' || !isDocument(row.content)) return;
-          handlersRef.current.onDocument({ title: row.title, content: row.content, updatedAt: row.updated_at });
+          handlersRef.current.onDocument({
+            title: row.title,
+            content: row.content,
+            updatedAt: row.updated_at,
+            editorId: typeof row.editor_id === 'string' ? row.editor_id : null,
+          });
         },
       );
     }

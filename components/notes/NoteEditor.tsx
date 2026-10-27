@@ -38,7 +38,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { toErrorMessage } from '@/lib/errors';
 import { downloadTextFile, markdownDocument, markdownFilename } from '@/lib/notes/markdown';
 import { blocksToPlainText } from '@/lib/notes/plainText';
-import { canonicalJson, instantMillis, isOwnWrite, shouldApplyRemote } from '@/lib/notes/liveNote';
+import { canonicalJson, isOwnEditor, shouldApplyRemote } from '@/lib/notes/liveNote';
 import { formatExactTime } from '@/lib/notes/time';
 import { uploadNoteImage } from '@/lib/supabase/noteMedia';
 import { getNote } from '@/lib/supabase/notes';
@@ -150,7 +150,7 @@ function NoteSurface({
   const timer = useRef<number | null>(null);
   const dirty = useRef(false);
   const ignoreUnmount = useRef(false);
-  const ownWrites = useRef<number[]>([]);
+  const editorId = useRef(crypto.randomUUID());
   const saveRef = useRef(saveNote);
   titleRef.current = title;
   saveRef.current = saveNote;
@@ -179,10 +179,10 @@ function NoteSurface({
     shareId,
     listenToDatabase: user?.id === note.user_id,
     handlers: {
-      onDocument: (update) => applyRemote(update.title, update.content, update.updatedAt),
+      onDocument: (update) => applyRemote(update.title, update.content, update.editorId),
       onSharePing: () => {
         void getNote(note.id)
-          .then((row) => applyRemote(row.title, row.content, row.updated_at))
+          .then((row) => applyRemote(row.title, row.content, row.editor_id))
           .catch(() => undefined);
       },
       onRevoked: () => setShareId(null),
@@ -203,14 +203,8 @@ function NoteSurface({
     };
   }, [note.id]);
 
-  function rememberWrite(updatedAt: string) {
-    const instant = instantMillis(updatedAt);
-    if (instant === null) return;
-    ownWrites.current = [...ownWrites.current, instant].slice(-12);
-  }
-
-  function applyRemote(nextTitle: string, content: Json, updatedAt?: string) {
-    if (isOwnWrite(updatedAt, ownWrites.current)) return;
+  function applyRemote(nextTitle: string, content: Json, remoteEditorId?: string | null) {
+    if (isOwnEditor(remoteEditorId, editorId.current)) return;
     const remoteContent = JSON.stringify(content);
     const remoteTitle = nextTitle.trim() || 'Untitled';
     const localContent = JSON.stringify(editor.document);
@@ -247,8 +241,8 @@ function NoteSurface({
         title: normalizedTitle,
         content,
         plainText: blocksToPlainText(content),
+        editorId: editorId.current,
       });
-      rememberWrite(updatedAt);
       lastSaved.current = serialized;
       lastTitle.current = normalizedTitle;
       const liveTitle = titleRef.current.trim() || 'Untitled';
@@ -311,6 +305,7 @@ function NoteSurface({
         title: normalizedTitle,
         content,
         plainText: blocksToPlainText(content),
+        editorId: editorId.current,
       }).then(() => publish({ updatedAt: new Date().toISOString() }));
     };
     // Flush the latest document when leaving this note. saveRef stays current.

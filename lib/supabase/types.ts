@@ -30,6 +30,7 @@ export type NoteRow = {
   plain_text: string;
   is_pinned: boolean;
   is_hidden: boolean;
+  editor_id: string | null;
   trashed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -73,6 +74,7 @@ export type SharedNote = {
   title: string;
   content: Json;
   updated_at: string;
+  editor_id: string | null;
   is_owner: boolean;
 };
 
@@ -96,6 +98,7 @@ type NoteInsert = {
   is_pinned?: boolean;
   is_hidden?: boolean;
   trashed_at?: string | null;
+  editor_id?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -108,6 +111,7 @@ type NoteUpdate = {
   is_pinned?: boolean;
   is_hidden?: boolean;
   trashed_at?: string | null;
+  editor_id?: string | null;
   updated_at?: string;
 };
 
@@ -224,6 +228,7 @@ export type Database = {
           p_title: string;
           p_content: Json;
           p_plain_text: string;
+          p_editor_id: string;
         };
         Returns: string;
       };

@@ -68,6 +68,7 @@ export function VersionHistoryDialog({
       title: selected.title || 'Untitled',
       content: selected.content,
       plainText: blocksToPlainText(selected.content),
+      editorId: crypto.randomUUID(),
     });
     setConfirming(false);
     onOpenChange(false);

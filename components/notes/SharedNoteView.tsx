@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLiveNote } from '@/hooks/useLiveNote';
 import { toErrorMessage } from '@/lib/errors';
 import { isUuid } from '@/lib/notes/ids';
-import { canonicalJson, instantMillis, isOwnWrite, shouldApplyRemote } from '@/lib/notes/liveNote';
+import { canonicalJson, isOwnEditor, shouldApplyRemote } from '@/lib/notes/liveNote';
 import { blocksToPlainText } from '@/lib/notes/plainText';
 import { uploadNoteImage } from '@/lib/supabase/noteMedia';
 import { getSharedNote, saveSharedNote } from '@/lib/supabase/shares';
@@ -116,7 +116,7 @@ function SharedSurface({ shareId, note, canEdit }: { shareId: string; note: Shar
   const lastSaved = useRef(JSON.stringify(note.content));
   const lastTitle = useRef(note.title || 'Untitled');
   const dirty = useRef(false);
-  const ownWrites = useRef<number[]>([]);
+  const editorId = useRef(crypto.randomUUID());
   const timer = useRef<number | null>(null);
   titleRef.current = title;
   userRef.current = user;
@@ -138,14 +138,8 @@ function SharedSurface({ shareId, note, canEdit }: { shareId: string; note: Shar
     [],
   );
 
-  function rememberWrite(updatedAt: string) {
-    const instant = instantMillis(updatedAt);
-    if (instant === null) return;
-    ownWrites.current = [...ownWrites.current, instant].slice(-12);
-  }
-
-  function applyRemote(nextTitle: string, content: Json, updatedAt?: string) {
-    if (isOwnWrite(updatedAt, ownWrites.current)) return;
+  function applyRemote(nextTitle: string, content: Json, remoteEditorId?: string | null) {
+    if (isOwnEditor(remoteEditorId, editorId.current)) return;
     const remoteContent = JSON.stringify(content);
     const remoteTitle = nextTitle.trim() || 'Untitled';
     if (
@@ -176,7 +170,7 @@ function SharedSurface({ shareId, note, canEdit }: { shareId: string; note: Shar
       setRevoked(true);
       return;
     }
-    applyRemote(row.title, row.content, row.updated_at);
+    applyRemote(row.title, row.content, row.editor_id);
   }
 
   const { publish } = useLiveNote({
@@ -184,7 +178,7 @@ function SharedSurface({ shareId, note, canEdit }: { shareId: string; note: Shar
     shareId,
     listenToDatabase: note.is_owner,
     handlers: {
-      onDocument: (update) => applyRemote(update.title, update.content, update.updatedAt),
+      onDocument: (update) => applyRemote(update.title, update.content, update.editorId),
       onSharePing: () => {
         void refresh().catch(() => undefined);
       },
@@ -201,8 +195,8 @@ function SharedSurface({ shareId, note, canEdit }: { shareId: string; note: Shar
       title: normalizedTitle,
       content,
       plainText: blocksToPlainText(content),
+      editorId: editorId.current,
     });
-    rememberWrite(updatedAt);
     lastSaved.current = serialized;
     lastTitle.current = normalizedTitle;
     const liveTitle = titleRef.current.trim() || 'Untitled';

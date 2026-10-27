@@ -21,20 +21,8 @@ export function canonicalJson(value: unknown): string {
   return JSON.stringify(sortValue(parsed));
 }
 
-export function instantMillis(value: string): number | null {
-  const trimmed = value.replace(/(\.\d{3})\d+/, '$1');
-  const parsed = Date.parse(trimmed);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-export function isOwnWrite(updatedAt: string | undefined, writes: Iterable<number>): boolean {
-  if (!updatedAt) return false;
-  const instant = instantMillis(updatedAt);
-  if (instant === null) return false;
-  for (const write of writes) {
-    if (write === instant) return true;
-  }
-  return false;
+export function isOwnEditor(remoteEditorId: string | null | undefined, localEditorId: string): boolean {
+  return typeof remoteEditorId === 'string' && remoteEditorId.length > 0 && remoteEditorId === localEditorId;
 }
 
 function parseJson(value: string): unknown {

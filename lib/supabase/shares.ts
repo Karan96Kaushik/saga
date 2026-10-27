@@ -41,12 +41,14 @@ export async function saveSharedNote(input: {
   title: string;
   content: Json;
   plainText: string;
+  editorId: string;
 }): Promise<string> {
   const { data, error } = await supabase.rpc('save_shared_note', {
     p_share_id: input.shareId,
     p_title: input.title,
     p_content: input.content,
     p_plain_text: input.plainText,
+    p_editor_id: input.editorId,
   });
   if (error) throw error;
   return data;

@@ -4,7 +4,7 @@ import { supabase } from '@/utils/supabase';
 type NoteUpdate = Database['public']['Tables']['notes']['Update'];
 
 const SUMMARY_COLUMNS =
-  'id, user_id, notebook_id, title, plain_text, is_pinned, is_hidden, trashed_at, created_at, updated_at' as const;
+  'id, user_id, notebook_id, title, plain_text, is_pinned, is_hidden, editor_id, trashed_at, created_at, updated_at' as const;
 
 const DETAIL_COLUMNS = `${SUMMARY_COLUMNS}, content` as const;
 
@@ -54,6 +54,7 @@ export async function updateNote(
     plainText?: string;
     isPinned?: boolean;
     isHidden?: boolean;
+    editorId?: string | null;
     trashedAt?: string | null;
   },
 ): Promise<NoteSummary> {
@@ -64,6 +65,7 @@ export async function updateNote(
   if (patch.plainText !== undefined) update.plain_text = patch.plainText;
   if (patch.isPinned !== undefined) update.is_pinned = patch.isPinned;
   if (patch.isHidden !== undefined) update.is_hidden = patch.isHidden;
+  if (patch.editorId !== undefined) update.editor_id = patch.editorId;
   if (patch.trashedAt !== undefined) update.trashed_at = patch.trashedAt;
 
   const { data, error } = await supabase.from('notes').update(update).eq('id', id)
